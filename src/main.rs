@@ -36,9 +36,7 @@ mod rpn {
         ans
     }
 
-    fn apply2<F>(stack: &mut Vec<f64>, f: F)
-        where
-            F: Fn(f64, f64) -> f64
+    fn apply2<F: Fn(f64, f64) -> f64>(stack: &mut Vec<f64>, f: F)
     {
         // Note: the first popped value is y, not x!
         if let (Some(y), Some(x)) = (stack.pop(), stack.pop()) {
