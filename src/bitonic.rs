@@ -1,4 +1,5 @@
 use crate::bitonic::SortOrder::{Ascending, Descending};
+use std::cmp::Ordering;
 
 pub enum SortOrder {
     Ascending,
@@ -8,8 +9,8 @@ pub enum SortOrder {
 pub fn sort<T: Ord>(xs: &mut [T], ord: SortOrder) -> Result<(), String> {
     if xs.len().is_power_of_two() {
         match ord {
-            Ascending => do_sort(xs, true),
-            Descending => do_sort(xs, false),
+            Ascending => do_sort(xs, true, &|a, b| a.cmp(b)),
+            Descending => do_sort(xs, false, &|a, b| a.cmp(b)),
         };
         Ok(())
     } else {
@@ -20,28 +21,57 @@ pub fn sort<T: Ord>(xs: &mut [T], ord: SortOrder) -> Result<(), String> {
     }
 }
 
-fn do_sort<T: Ord>(xs: &mut [T], up: bool) {
-    if xs.len() > 1 {
-        let mid_point = xs.len() / 2;
-        do_sort(&mut xs[..mid_point], true);
-        do_sort(&mut xs[mid_point..], false);
-        sub_sort(xs, up)
+pub fn sort_by<T, F>(xs: &mut [T], comparator: &F) -> Result<(), String>
+where
+    F: Fn(&T, &T) -> Ordering,
+{
+    if xs.len().is_power_of_two() {
+        do_sort(xs, true, comparator);
+        Ok(())
+    } else {
+        Err(format!(
+            "The length of xs is not a power of two. (xs.len(): {})",
+            xs.len()
+        ))
     }
 }
 
-fn sub_sort<T: Ord>(xs: &mut [T], up: bool) {
+fn do_sort<T, F>(xs: &mut [T], up: bool, comparator: &F)
+where
+    F: Fn(&T, &T) -> Ordering,
+{
     if xs.len() > 1 {
-        compare_and_swap(xs, up);
         let mid_point = xs.len() / 2;
-        sub_sort(&mut xs[..mid_point], up);
-        sub_sort(&mut xs[mid_point..], up)
+        do_sort(&mut xs[..mid_point], true, comparator);
+        do_sort(&mut xs[mid_point..], false, comparator);
+        sub_sort(xs, up, comparator)
     }
 }
 
-fn compare_and_swap<T: Ord>(xs: &mut [T], up: bool) {
+fn sub_sort<T, F>(xs: &mut [T], up: bool, comparator: &F)
+where
+    F: Fn(&T, &T) -> Ordering,
+{
+    if xs.len() > 1 {
+        compare_and_swap(xs, up, comparator);
+        let mid_point = xs.len() / 2;
+        sub_sort(&mut xs[..mid_point], up, comparator);
+        sub_sort(&mut xs[mid_point..], up, comparator);
+    }
+}
+
+fn compare_and_swap<T, F>(xs: &mut [T], up: bool, comparator: &F)
+where
+    F: Fn(&T, &T) -> Ordering,
+{
     let mid_point = xs.len() / 2;
     for i in 0..mid_point {
-        if (xs[i] > xs[mid_point + i]) == up {
+        let ord = if up {
+            Ordering::Greater
+        } else {
+            Ordering::Less
+        };
+        if (comparator(&xs[i], &xs[mid_point + i])) == ord {
             xs.swap(i, mid_point + i)
         }
     }
@@ -50,7 +80,25 @@ fn compare_and_swap<T: Ord>(xs: &mut [T], up: bool) {
 #[cfg(test)]
 mod test {
     use super::sort;
+    use super::sort_by;
     use crate::bitonic::SortOrder::*;
+
+    #[derive(Debug, Eq, PartialEq)]
+    struct Student {
+        first_name: String,
+        last_name: String,
+        age: u8,
+    }
+
+    impl Student {
+        fn new(first_name: &str, last_name: &str, age: u8) -> Self {
+            Self {
+                first_name: first_name.to_string(),
+                last_name: last_name.to_string(),
+                age,
+            }
+        }
+    }
 
     #[test]
     fn sort_u32_ascending() {
@@ -120,6 +168,19 @@ mod test {
                 "GC"
             ]
         );
+    }
+
+    #[test]
+    fn sort_student_by_age_ascending() {
+        let miki = Student::new("Miki", "Hoshii", 15);
+        let makoto = Student::new("Makoto", "Kikuchi", 17);
+        let mami = Student::new("Mami", "Futami", 13);
+        let ritsuko = Student::new("Ritsuko", "Akiduki", 19);
+        let mut students = vec![&miki, &makoto, &mami, &ritsuko];
+        let expected = vec![&mami, &miki, &makoto, &ritsuko];
+
+        assert_eq!(sort_by(&mut students, &|a, b| a.age.cmp(&b.age)), Ok(()));
+        assert_eq!(students, expected);
     }
 
     #[test]
