@@ -1,4 +1,4 @@
-pub fn sort(xs: &mut [u32], up: bool) {
+pub fn sort<T: Ord>(xs: &mut [T], up: bool) {
     if xs.len() > 1 {
         let mid_point = xs.len() / 2;
         sort(&mut xs[..mid_point], true);
@@ -7,7 +7,7 @@ pub fn sort(xs: &mut [u32], up: bool) {
     }
 }
 
-fn sub_sort(xs: &mut [u32], up: bool) {
+fn sub_sort<T: Ord>(xs: &mut [T], up: bool) {
     if xs.len() > 1 {
         compare_and_swap(xs, up);
         let mid_point = xs.len() / 2;
@@ -16,7 +16,7 @@ fn sub_sort(xs: &mut [u32], up: bool) {
     }
 }
 
-fn compare_and_swap(xs: &mut [u32], up: bool) {
+fn compare_and_swap<T: Ord>(xs: &mut [T], up: bool) {
     let mid_point = xs.len() / 2;
     for i in 0..mid_point {
         if (xs[i] > xs[mid_point + i]) == up {
@@ -31,15 +31,71 @@ mod test {
 
     #[test]
     fn sort_u32_ascending() {
-        let mut x = vec![10, 30, 11, 20, 4, 330, 21, 110];
+        let mut x: Vec<u32> = vec![10, 30, 11, 20, 4, 330, 21, 110];
         sort(&mut x, true);
         assert_eq!(x, vec![4, 10, 11, 20, 21, 30, 110, 330]);
     }
 
     #[test]
     fn sort_u32_descending() {
-        let mut x = vec![10, 30, 11, 20, 4, 330, 21, 110];
+        let mut x: Vec<u32> = vec![10, 30, 11, 20, 4, 330, 21, 110];
         sort(&mut x, false);
         assert_eq!(x, vec![330, 110, 30, 21, 20, 11, 10, 4]);
+    }
+
+    #[test]
+    fn sort_str_ascending() {
+        let mut x = vec![
+            "Rust",
+            "is",
+            "fast",
+            "and",
+            "memory-efficient",
+            "with",
+            "no",
+            "GC",
+        ];
+        sort(&mut x, true);
+        assert_eq!(
+            x,
+            vec![
+                "GC",
+                "Rust",
+                "and",
+                "fast",
+                "is",
+                "memory-efficient",
+                "no",
+                "with"
+            ]
+        );
+    }
+
+    #[test]
+    fn sort_str_descending() {
+        let mut x = vec![
+            "Rust",
+            "is",
+            "fast",
+            "and",
+            "memory-efficient",
+            "with",
+            "no",
+            "GC",
+        ];
+        sort(&mut x, false);
+        assert_eq!(
+            x,
+            vec![
+                "with",
+                "no",
+                "memory-efficient",
+                "is",
+                "fast",
+                "and",
+                "Rust",
+                "GC"
+            ]
+        );
     }
 }
