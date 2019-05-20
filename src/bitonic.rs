@@ -1,6 +1,7 @@
 use crate::bitonic::SortOrder::{Ascending, Descending};
 use std::cmp::Ordering;
 
+#[derive(PartialEq)]
 pub enum SortOrder {
     Ascending,
     Descending,

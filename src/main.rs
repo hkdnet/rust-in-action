@@ -19,13 +19,16 @@ fn rpn() {
 
 fn bitonic() {
     use rust_in_action::bitonic;
+    use rust_in_action::util;
 
-    let mut arr = [1u32, 2u32, 3u32, 4u32];
+    let mut arr = util::new_u32_vec(4);
     bitonic::sort(&mut arr, Ascending).expect("sortable");
 
+    assert!(util::is_sorted(&arr, Ascending));
     println!("up = true : {:?}", arr);
 
     bitonic::sort(&mut arr, Descending).expect("sortable");
 
+    assert!(util::is_sorted(&arr, Descending));
     println!("up = false: {:?}", arr);
 }
