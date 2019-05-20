@@ -75,6 +75,7 @@ mod test {
     use super::sort;
     use super::sort_by;
     use crate::bitonic::SortOrder::*;
+    use crate::util;
 
     #[derive(Debug, Eq, PartialEq)]
     struct Student {
@@ -180,5 +181,19 @@ mod test {
     fn sort_to_fail() {
         let mut xs = vec![10, 30, 1];
         assert!(sort(&mut xs, Ascending).is_err());
+    }
+
+    #[test]
+    fn sort_u32_large() {
+        {
+            let mut arr = util::new_u32_vec(65536);
+            assert_eq!(sort(&mut arr, Ascending), Ok(()));
+            assert!(util::is_sorted(&arr, Ascending));
+        }
+        {
+            let mut arr = util::new_u32_vec(65536);
+            assert_eq!(sort(&mut arr, Descending), Ok(()));
+            assert!(util::is_sorted(&arr, Descending));
+        }
     }
 }
