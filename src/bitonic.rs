@@ -3,6 +3,99 @@ use rayon;
 use std::cmp::Ordering;
 
 const PARALLEL_THRESHOLD: usize = 4096;
+const DEFAULT_SORTER: Sorter = Sorter {
+    threshold: PARALLEL_THRESHOLD,
+};
+
+struct Sorter {
+    threshold: usize,
+}
+
+impl Sorter {
+    pub fn new_sorter(n: usize) -> Self {
+        Sorter { threshold: n }
+    }
+
+    pub fn sort<T: Ord + Send>(self: &Self, xs: &mut [T], ord: SortOrder) -> Result<(), String> {
+        match ord {
+            Ascending => self.sort_by(xs, &|a, b| a.cmp(b)),
+            Descending => self.sort_by(xs, &|a, b| b.cmp(a)),
+        }
+    }
+
+    pub fn sort_by<T: Send, F>(self: &Self, xs: &mut [T], comparator: &F) -> Result<(), String>
+    where
+        F: Sync + Fn(&T, &T) -> Ordering,
+    {
+        if xs.len().is_power_of_two() {
+            self.do_sort(xs, true, comparator);
+            Ok(())
+        } else {
+            Err(format!(
+                "The length of xs is not a power of two. (xs.len(): {})",
+                xs.len()
+            ))
+        }
+    }
+
+    fn do_sort<T: Send, F>(self: &Self, xs: &mut [T], up: bool, comparator: &F)
+    where
+        F: Sync + Fn(&T, &T) -> Ordering,
+    {
+        if xs.len() > 1 {
+            let mid_point = xs.len() / 2;
+            let (first, second) = xs.split_at_mut(mid_point);
+            if mid_point >= self.threshold {
+                rayon::join(
+                    || self.do_sort(first, true, comparator),
+                    || self.do_sort(second, false, comparator),
+                );
+            } else {
+                self.do_sort(first, true, comparator);
+                self.do_sort(second, false, comparator);
+            }
+            self.sub_sort(xs, up, comparator)
+        }
+    }
+
+    fn sub_sort<T: Send, F>(self: &Self, xs: &mut [T], up: bool, comparator: &F)
+    where
+        F: Sync + Fn(&T, &T) -> Ordering,
+    {
+        if xs.len() > 1 {
+            Self::compare_and_swap(xs, up, comparator);
+            let mid_point = xs.len() / 2;
+
+            let (first, second) = xs.split_at_mut(mid_point);
+            if mid_point >= self.threshold {
+                rayon::join(
+                    || self.sub_sort(first, up, comparator),
+                    || self.sub_sort(second, up, comparator),
+                );
+            } else {
+                self.sub_sort(first, up, comparator);
+                self.sub_sort(second, up, comparator);
+            }
+        }
+    }
+
+    fn compare_and_swap<T, F>(xs: &mut [T], up: bool, comparator: &F)
+    where
+        F: Fn(&T, &T) -> Ordering,
+    {
+        let mid_point = xs.len() / 2;
+        for i in 0..mid_point {
+            let ord = if up {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            };
+            if (comparator(&xs[i], &xs[mid_point + i])) == ord {
+                xs.swap(i, mid_point + i)
+            }
+        }
+    }
+}
 
 #[derive(PartialEq)]
 pub enum SortOrder {
@@ -11,83 +104,14 @@ pub enum SortOrder {
 }
 
 pub fn sort<T: Ord + Send>(xs: &mut [T], ord: SortOrder) -> Result<(), String> {
-    match ord {
-        Ascending => sort_by(xs, &|a, b| a.cmp(b)),
-        Descending => sort_by(xs, &|a, b| b.cmp(a)),
-    }
+    DEFAULT_SORTER.sort(xs, ord)
 }
 
 pub fn sort_by<T: Send, F>(xs: &mut [T], comparator: &F) -> Result<(), String>
 where
     F: Sync + Fn(&T, &T) -> Ordering,
 {
-    if xs.len().is_power_of_two() {
-        do_sort(xs, true, comparator);
-        Ok(())
-    } else {
-        Err(format!(
-            "The length of xs is not a power of two. (xs.len(): {})",
-            xs.len()
-        ))
-    }
-}
-
-fn do_sort<T: Send, F>(xs: &mut [T], up: bool, comparator: &F)
-where
-    F: Sync + Fn(&T, &T) -> Ordering,
-{
-    if xs.len() > 1 {
-        let mid_point = xs.len() / 2;
-        let (first, second) = xs.split_at_mut(mid_point);
-        if mid_point >= PARALLEL_THRESHOLD {
-            rayon::join(
-                || do_sort(first, true, comparator),
-                || do_sort(second, false, comparator),
-            );
-        } else {
-            do_sort(first, true, comparator);
-            do_sort(second, false, comparator);
-        }
-        sub_sort(xs, up, comparator)
-    }
-}
-
-fn sub_sort<T: Send, F>(xs: &mut [T], up: bool, comparator: &F)
-where
-    F: Sync + Fn(&T, &T) -> Ordering,
-{
-    if xs.len() > 1 {
-        compare_and_swap(xs, up, comparator);
-        let mid_point = xs.len() / 2;
-
-        let (first, second) = xs.split_at_mut(mid_point);
-        if mid_point >= PARALLEL_THRESHOLD {
-            rayon::join(
-                || sub_sort(first, up, comparator),
-                || sub_sort(second, up, comparator),
-            );
-        } else {
-            sub_sort(first, up, comparator);
-            sub_sort(second, up, comparator);
-        }
-    }
-}
-
-fn compare_and_swap<T, F>(xs: &mut [T], up: bool, comparator: &F)
-where
-    F: Fn(&T, &T) -> Ordering,
-{
-    let mid_point = xs.len() / 2;
-    for i in 0..mid_point {
-        let ord = if up {
-            Ordering::Greater
-        } else {
-            Ordering::Less
-        };
-        if (comparator(&xs[i], &xs[mid_point + i])) == ord {
-            xs.swap(i, mid_point + i)
-        }
-    }
+    DEFAULT_SORTER.sort_by(xs, comparator)
 }
 
 #[cfg(test)]
