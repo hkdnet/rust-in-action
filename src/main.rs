@@ -21,11 +21,11 @@ fn bitonic() {
     use rust_in_action::bitonic;
 
     let mut arr = [1u32, 2u32, 3u32, 4u32];
-    bitonic::sort(&mut arr, Ascending);
+    bitonic::sort(&mut arr, Ascending).expect("sortable");
 
     println!("up = true : {:?}", arr);
 
-    bitonic::sort(&mut arr, Descending);
+    bitonic::sort(&mut arr, Descending).expect("sortable");
 
     println!("up = false: {:?}", arr);
 }
