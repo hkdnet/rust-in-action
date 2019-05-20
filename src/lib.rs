@@ -1,2 +1,2 @@
-pub mod rpn;
 pub mod bitonic;
+pub mod rpn;

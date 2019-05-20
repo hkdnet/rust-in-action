@@ -18,21 +18,25 @@ pub fn solve(expr: &str) -> f64 {
                 "-" => apply2(&mut stack, |x, y| x - y),
                 "*" => apply2(&mut stack, |x, y| x * y),
                 "/" => apply2(&mut stack, |x, y| x / y),
-                _ => {
-                    panic!("Unknown operator: {}", token)
-                }
+                _ => panic!("Unknown operator: {}", token),
             }
         }
     }
     let ans = stack.pop().expect("Stack underflow!");
     if !stack.is_empty() {
-        panic!("some value remained!: [{}]", stack.iter().map(|x| format!("{}", x)).collect::<Vec<String>>().join(","));
+        panic!(
+            "some value remained!: [{}]",
+            stack
+                .iter()
+                .map(|x| format!("{}", x))
+                .collect::<Vec<String>>()
+                .join(",")
+        );
     }
     ans
 }
 
-fn apply2<F: Fn(f64, f64) -> f64>(stack: &mut Vec<f64>, f: F)
-{
+fn apply2<F: Fn(f64, f64) -> f64>(stack: &mut Vec<f64>, f: F) {
     // Note: the first popped value is y, not x!
     if let (Some(y), Some(x)) = (stack.pop(), stack.pop()) {
         let z = f(x, y);
