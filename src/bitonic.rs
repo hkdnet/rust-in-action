@@ -121,4 +121,10 @@ mod test {
             ]
         );
     }
+
+    #[test]
+    fn sort_to_fail() {
+        let mut xs = vec![10, 30, 1];
+        assert!(sort(&mut xs, Ascending).is_err());
+    }
 }
