@@ -7,17 +7,9 @@ pub enum SortOrder {
 }
 
 pub fn sort<T: Ord>(xs: &mut [T], ord: SortOrder) -> Result<(), String> {
-    if xs.len().is_power_of_two() {
-        match ord {
-            Ascending => do_sort(xs, true, &|a, b| a.cmp(b)),
-            Descending => do_sort(xs, false, &|a, b| a.cmp(b)),
-        };
-        Ok(())
-    } else {
-        Err(format!(
-            "The length of xs is not a power of two. (xs.len(): {})",
-            xs.len()
-        ))
+    match ord {
+        Ascending => sort_by(xs, &|a, b| a.cmp(b)),
+        Descending => sort_by(xs, &|a, b| b.cmp(a)),
     }
 }
 
