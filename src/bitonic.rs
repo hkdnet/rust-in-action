@@ -1,5 +1,8 @@
 use crate::bitonic::SortOrder::{Ascending, Descending};
+use rayon;
 use std::cmp::Ordering;
+
+const PARALLEL_THRESHOLD: usize = 4096;
 
 #[derive(PartialEq)]
 pub enum SortOrder {
@@ -7,16 +10,16 @@ pub enum SortOrder {
     Descending,
 }
 
-pub fn sort<T: Ord>(xs: &mut [T], ord: SortOrder) -> Result<(), String> {
+pub fn sort<T: Ord + Send>(xs: &mut [T], ord: SortOrder) -> Result<(), String> {
     match ord {
         Ascending => sort_by(xs, &|a, b| a.cmp(b)),
         Descending => sort_by(xs, &|a, b| b.cmp(a)),
     }
 }
 
-pub fn sort_by<T, F>(xs: &mut [T], comparator: &F) -> Result<(), String>
+pub fn sort_by<T: Send, F>(xs: &mut [T], comparator: &F) -> Result<(), String>
 where
-    F: Fn(&T, &T) -> Ordering,
+    F: Sync + Fn(&T, &T) -> Ordering,
 {
     if xs.len().is_power_of_two() {
         do_sort(xs, true, comparator);
@@ -29,27 +32,44 @@ where
     }
 }
 
-fn do_sort<T, F>(xs: &mut [T], up: bool, comparator: &F)
+fn do_sort<T: Send, F>(xs: &mut [T], up: bool, comparator: &F)
 where
-    F: Fn(&T, &T) -> Ordering,
+    F: Sync + Fn(&T, &T) -> Ordering,
 {
     if xs.len() > 1 {
         let mid_point = xs.len() / 2;
-        do_sort(&mut xs[..mid_point], true, comparator);
-        do_sort(&mut xs[mid_point..], false, comparator);
+        let (first, second) = xs.split_at_mut(mid_point);
+        if mid_point >= PARALLEL_THRESHOLD {
+            rayon::join(
+                || do_sort(first, true, comparator),
+                || do_sort(second, false, comparator),
+            );
+        } else {
+            do_sort(first, true, comparator);
+            do_sort(second, false, comparator);
+        }
         sub_sort(xs, up, comparator)
     }
 }
 
-fn sub_sort<T, F>(xs: &mut [T], up: bool, comparator: &F)
+fn sub_sort<T: Send, F>(xs: &mut [T], up: bool, comparator: &F)
 where
-    F: Fn(&T, &T) -> Ordering,
+    F: Sync + Fn(&T, &T) -> Ordering,
 {
     if xs.len() > 1 {
         compare_and_swap(xs, up, comparator);
         let mid_point = xs.len() / 2;
-        sub_sort(&mut xs[..mid_point], up, comparator);
-        sub_sort(&mut xs[mid_point..], up, comparator);
+
+        let (first, second) = xs.split_at_mut(mid_point);
+        if mid_point >= PARALLEL_THRESHOLD {
+            rayon::join(
+                || sub_sort(first, up, comparator),
+                || sub_sort(second, up, comparator),
+            );
+        } else {
+            sub_sort(first, up, comparator);
+            sub_sort(second, up, comparator);
+        }
     }
 }
 
