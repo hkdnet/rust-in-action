@@ -7,12 +7,12 @@ const DEFAULT_SORTER: Sorter = Sorter {
     threshold: PARALLEL_THRESHOLD,
 };
 
-struct Sorter {
+pub struct Sorter {
     threshold: usize,
 }
 
 impl Sorter {
-    pub fn new_sorter(n: usize) -> Self {
+    pub fn new(n: usize) -> Self {
         Sorter { threshold: n }
     }
 
