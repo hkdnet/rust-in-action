@@ -32,6 +32,16 @@ impl<T: Default> ToyVec<T> {
         self.get(idx).unwrap_or(default)
     }
 
+    pub fn pop(&mut self) -> Option<T> {
+        if self.len == 0 {
+            None
+        } else {
+            self.len -= 1;
+            let elem = std::mem::replace(&mut self.elements[self.len], Default::default());
+            Some(elem)
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.len
     }
@@ -76,5 +86,16 @@ mod tests {
         assert_eq!(vec.get(0), None);
         let a = 100;
         assert_eq!(vec.get_or(0, &a), &a);
+    }
+
+    #[test]
+    fn test_pop() {
+        let mut vec = ToyVec::<u8>::new();
+        assert_eq!(vec.pop(), None);
+        let a = 100;
+        let b = 200;
+        vec.push(a);
+        vec.push(b);
+        assert_eq!(vec.pop(), Some(b));
     }
 }
