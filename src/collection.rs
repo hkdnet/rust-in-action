@@ -55,12 +55,10 @@ impl<T: Default> ToyVec<T> {
         if self.len() >= cap {
             let new_cap = if cap == 0 { 1 } else { cap * 2 };
             // reallocation
-            // TODO:
-            //   let mut new_elem = Self::allocate_in_heap(new_cap);
-            //   for i in 0..self.len() {
-            //     new_elem[i] = self.elements[i];
-            //   }
-            let new_elem = Self::allocate_in_heap(new_cap);
+            let mut new_elem = Self::allocate_in_heap(new_cap);
+            for i in 0..self.len() {
+                new_elem[i] = std::mem::replace(&mut self.elements[i], Default::default());
+            }
             self.elements = new_elem;
         }
         self.elements[self.len] = elem;
@@ -76,16 +74,27 @@ mod tests {
     fn test_get() {
         let mut vec = ToyVec::<u8>::new();
         assert_eq!(vec.get(0), None);
+        assert_eq!(vec.get(1), None);
+        assert_eq!(vec.get(2), None);
         vec.push(1);
         assert_eq!(vec.get(0), Some(&1));
+        assert_eq!(vec.get(1), None);
+        assert_eq!(vec.get(2), None);
+        vec.push(2);
+        assert_eq!(vec.get(0), Some(&1));
+        assert_eq!(vec.get(1), Some(&2));
+        assert_eq!(vec.get(2), None);
     }
 
     #[test]
     fn test_get_or() {
-        let vec = ToyVec::<u8>::new();
+        let mut vec = ToyVec::<u8>::new();
         assert_eq!(vec.get(0), None);
         let a = 100;
         assert_eq!(vec.get_or(0, &a), &a);
+        let b = 200;
+        vec.push(b);
+        assert_eq!(vec.get_or(0, &a), &b);
     }
 
     #[test]
@@ -96,6 +105,8 @@ mod tests {
         let b = 200;
         vec.push(a);
         vec.push(b);
+        assert_eq!(vec.len(), 2);
         assert_eq!(vec.pop(), Some(b));
+        assert_eq!(vec.len(), 1);
     }
 }
