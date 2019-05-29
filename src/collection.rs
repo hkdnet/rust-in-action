@@ -51,18 +51,24 @@ impl<T: Default> ToyVec<T> {
     }
 
     pub fn push(&mut self, elem: T) {
-        let cap = self.capacity();
-        if self.len() >= cap {
-            let new_cap = if cap == 0 { 1 } else { cap * 2 };
-            // reallocation
-            let mut new_elem = Self::allocate_in_heap(new_cap);
-            for i in 0..self.len() {
-                new_elem[i] = std::mem::replace(&mut self.elements[i], Default::default());
-            }
-            self.elements = new_elem;
+        if self.len() >= self.capacity() {
+            self.grow();
         }
         self.elements[self.len] = elem;
         self.len += 1;
+    }
+
+    fn grow(&mut self) {
+        let new_cap = if self.capacity() == 0 {
+            1
+        } else {
+            self.capacity() * 2
+        };
+        let mut new_elem = Self::allocate_in_heap(new_cap);
+        for i in 0..self.len() {
+            new_elem[i] = std::mem::replace(&mut self.elements[i], Default::default());
+        }
+        self.elements = new_elem;
     }
 }
 
