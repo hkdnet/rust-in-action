@@ -64,11 +64,11 @@ impl<T: Default> ToyVec<T> {
         } else {
             self.capacity() * 2
         };
-        let mut new_elem = Self::allocate_in_heap(new_cap);
-        for i in 0..self.len() {
-            new_elem[i] = std::mem::replace(&mut self.elements[i], Default::default());
+        let new_elem = Self::allocate_in_heap(new_cap);
+        let old_elements = std::mem::replace(&mut self.elements, new_elem);
+        for (i, elem) in old_elements.into_vec().into_iter().enumerate() {
+            self.elements[i] = elem;
         }
-        self.elements = new_elem;
     }
 }
 
