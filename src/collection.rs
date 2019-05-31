@@ -70,6 +70,43 @@ impl<T: Default> ToyVec<T> {
             self.elements[i] = elem;
         }
     }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            elements: &self.elements,
+            len: self.len(),
+            pos: 0,
+        }
+    }
+}
+
+impl<'vec, T: Default> IntoIterator for &'vec ToyVec<T> {
+    type Item = &'vec T;
+    type IntoIter = Iter<'vec, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct Iter<'vec, T> {
+    elements: &'vec Box<[T]>,
+    len: usize,
+    pos: usize, // the next element's index
+}
+
+impl<'vec, T> Iterator for Iter<'vec, T> {
+    type Item = &'vec T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos >= self.len {
+            None
+        } else {
+            let e = &self.elements[self.pos];
+            self.pos += 1;
+            Some(e)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -114,5 +151,19 @@ mod tests {
         assert_eq!(vec.len(), 2);
         assert_eq!(vec.pop(), Some(b));
         assert_eq!(vec.len(), 1);
+    }
+
+    #[test]
+    fn test_for() {
+        let mut vec = ToyVec::<u8>::new();
+        vec.push(0);
+        vec.push(1);
+        vec.push(2);
+
+        let mut expected = Vec::new();
+        for &e in vec.iter() {
+            expected.push(e);
+        }
+        assert_eq!(expected, vec![0, 1, 2]);
     }
 }
