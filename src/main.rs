@@ -9,6 +9,7 @@ fn main() {
             "rpn" => rpn(),
             "bitonic" => bitonic(),
             "bitonic_benchmark" => bitonic_benchmark(23),
+            "lex" => lex_loop(),
             e => println!("Unknown arg: {}", e),
         },
         None => eprintln!("arg is required"),
@@ -71,4 +72,29 @@ fn timed_sort(len: usize, sorter: bitonic::Sorter) -> f64 {
     assert!(util::is_sorted(&mut xs, Ascending));
 
     dur.subsec_nanos() as f64 + dur.as_secs() as f64 * 1e9_f64
+}
+
+fn lex_loop() {
+    use rust_in_action::calc;
+    use std::io::BufRead;
+    let stdin = std::io::stdin();
+    let stdin = stdin.lock();
+    let stdin = std::io::BufReader::new(stdin);
+    let mut lines = stdin.lines();
+    loop {
+        prompt("> ").unwrap();
+        if let Some(Ok(line)) = lines.next() {
+            let token = calc::lex(&line);
+            println!("{:?}", token);
+        } else {
+            break;
+        }
+    }
+}
+fn prompt(s: &str) -> std::io::Result<()> {
+    use std::io::Write;
+    let stdout = std::io::stdout();
+    let mut stdout = stdout.lock();
+    stdout.write(s.as_bytes())?;
+    stdout.flush()
 }
