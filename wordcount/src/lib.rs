@@ -1,6 +1,6 @@
-use std::io::BufRead;
-use std::collections::HashMap;
 use regex::Regex;
+use std::collections::HashMap;
+use std::io::BufRead;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CountOption {
@@ -15,7 +15,7 @@ impl Default for CountOption {
     }
 }
 
-pub fn count(input: impl BufRead, option: CountOption) -> HashMap <String, usize> {
+pub fn count(input: impl BufRead, option: CountOption) -> HashMap<String, usize> {
     let re = Regex::new(r"\w+").unwrap();
     let mut freqs = HashMap::new();
 
