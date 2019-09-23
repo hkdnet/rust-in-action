@@ -31,6 +31,24 @@ impl Default for CountOption {
 /// * [`CountOption::Char`](enum.CountOption.html#variant.Char): per a Unicode character
 /// * [`CountOption::Word`](enum.CountOption.html#variant.Word): per a word matching `\w+`
 /// * [`CountOption::Line`](enum.CountOption.html#variant.Line): per a line ending `\n` or `\r\n`
+///
+/// # Example
+///
+/// An example for counting by words.
+/// ```
+/// use std::io::Cursor;
+/// use wordcount::{count, CountOption};
+///
+/// macro_rules! assert_map {
+///         ($expr: expr, {$($key: expr => $value: expr), *}) => {
+///             $(assert_eq!($expr[$key], $value));*
+///         };
+///     }
+///
+/// let actual = count(Cursor::new("aa bb cc bb"), CountOption::Word);
+/// assert_eq!(actual.len(), 3);
+/// assert_map!(actual, {"aa" => 1, "bb" => 2, "cc" => 1});
+/// ```
 pub fn count(input: impl BufRead, option: CountOption) -> HashMap<String, usize> {
     let re = Regex::new(r"\w+").unwrap();
     let mut freqs = HashMap::new();
@@ -57,18 +75,4 @@ pub fn count(input: impl BufRead, option: CountOption) -> HashMap<String, usize>
     }
 
     freqs
-}
-
-#[test]
-fn word_count_works() {
-    use std::io::Cursor;
-    macro_rules! assert_map {
-        ($expr: expr, {$($key: expr => $value: expr), *}) => {
-            $(assert_eq!($expr[$key], $value));*
-        };
-    }
-
-    let actual = count(Cursor::new("aa bb cc bb"), CountOption::Word);
-    assert_eq!(actual.len(), 3);
-    assert_map!(actual, {"aa" => 1, "bb" => 2, "cc" => 1});
 }
