@@ -1,20 +1,36 @@
+//! wordcount provides simple features to count chars, words or lines.
+//! Please see [`count`](fn.count.html) for detail.
+
+#![deny(missing_docs)]
+
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::BufRead;
 
+/// Options for [`count`](fn.count.html).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CountOption {
+    /// Count by chars
     Char,
+    /// Count by words
     Word,
+    /// Count by lines
     Line,
 }
 
+/// The default value is [`Word`](enum.CountOption.html#variant.Word)
 impl Default for CountOption {
     fn default() -> Self {
         CountOption::Word
     }
 }
 
+/// Count something from input and return frequencies.
+///
+/// You can pass option to change the count unit.
+/// * [`CountOption::Char`](enum.CountOption.html#variant.Char): per a Unicode character
+/// * [`CountOption::Word`](enum.CountOption.html#variant.Word): per a word matching `\w+`
+/// * [`CountOption::Line`](enum.CountOption.html#variant.Line): per a line ending `\n` or `\r\n`
 pub fn count(input: impl BufRead, option: CountOption) -> HashMap<String, usize> {
     let re = Regex::new(r"\w+").unwrap();
     let mut freqs = HashMap::new();
