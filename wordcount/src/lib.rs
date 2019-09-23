@@ -62,9 +62,13 @@ pub fn count(input: impl BufRead, option: CountOption) -> HashMap<String, usize>
 #[test]
 fn word_count_works() {
     use std::io::Cursor;
-    let mut exp = HashMap::new();
-    exp.insert("aa".to_string(), 1);
-    exp.insert("bb".to_string(), 2);
-    exp.insert("cc".to_string(), 1);
-    assert_eq!(count(Cursor::new("aa bb cc bb"), CountOption::Word), exp);
+    macro_rules! assert_map {
+        ($expr: expr, {$($key: expr => $value: expr), *}) => {
+            $(assert_eq!($expr[$key], $value));*
+        };
+    }
+
+    let actual = count(Cursor::new("aa bb cc bb"), CountOption::Word);
+    assert_eq!(actual.len(), 3);
+    assert_map!(actual, {"aa" => 1, "bb" => 2, "cc" => 1});
 }
